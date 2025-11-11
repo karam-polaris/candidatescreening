@@ -116,8 +116,17 @@ export class IngestService {
 
       for (const record of records) {
         try {
+          // Convert Date objects to ISO strings (Papa.parse with dynamicTyping converts dates)
+          const normalizedRecord = { ...record };
+          if (normalizedRecord.submitted_at instanceof Date) {
+            normalizedRecord.submitted_at = normalizedRecord.submitted_at.toISOString();
+          }
+          if (normalizedRecord.recruiter_notes === null || normalizedRecord.recruiter_notes === undefined) {
+            normalizedRecord.recruiter_notes = '';
+          }
+          
           // Validate with Zod
-          const validated = ApplicationIngestSchema.parse(record);
+          const validated = ApplicationIngestSchema.parse(normalizedRecord);
 
           // Ensure we have an application_id
           const applicationId = validated.application_id || uuidv4();
