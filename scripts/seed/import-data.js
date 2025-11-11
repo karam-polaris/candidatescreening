@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const API_URL = 'http://localhost:4000';
+const API_URL = process.env.API_URL || 'http://localhost:4000';
 
 async function importJobs() {
   const jobs = JSON.parse(fs.readFileSync(path.join(__dirname, 'generated/jobs.json'), 'utf8'));
