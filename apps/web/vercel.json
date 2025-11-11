@@ -1,9 +1,9 @@
 {
-  "buildCommand": "pnpm install && pnpm build",
-  "outputDirectory": ".next",
+  "buildCommand": "cd ../.. && pnpm -r -F @candidate-screening/web... build",
+  "installCommand": "cd ../.. && npm install -g pnpm && pnpm install",
   "devCommand": "pnpm dev",
-  "installCommand": "npm install -g pnpm && pnpm install",
   "framework": "nextjs",
+  "outputDirectory": ".next",
   "regions": ["iad1"]
 }
 
