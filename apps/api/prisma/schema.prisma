@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Job {
+  id            String   @id @default(uuid()) @map("job_id")
+  title         String
+  location      String?
+  competencies  Json     // Array of Competency objects
+  hardFilters   Json?    // HardFilters object
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  applications  Application[]
+  fitSnapshots  FitSnapshot[]
+
+  @@map("jobs")
+}
+
+model Candidate {
+  id                    String   @id @default(uuid()) @map("candidate_id")
+  fullName              String   @map("full_name")
+  emails                String[]
+  phones                String[]
+  location              String?
+  workAuth              String?  @map("work_auth")
+  currentTitle          String?  @map("current_title")
+  totalExperienceYears  Float?   @map("total_experience_years")
+  skills                Json     // Array of Skill objects
+  seniority             String?
+  education             Json?    // Array of Education objects
+  experienceSummary     String?  @map("experience_summary")
+  sources               Json?    // Array of Source objects
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  applications  Application[]
+  assessments   Assessment[]
+  fitSnapshots  FitSnapshot[]
+
+  @@map("candidates")
+}
+
+model Application {
+  id             String   @id @default(uuid()) @map("application_id")
+  jobId          String   @map("job_id")
+  candidateId    String   @map("candidate_id")
+  source         String?
+  submittedAt    DateTime? @map("submitted_at")
+  stage          String?  @default("applied")
+  recruiterNotes String?  @map("recruiter_notes")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([candidateId])
+  @@map("applications")
+}
+
+model Assessment {
+  id             String   @id @default(uuid()) @map("assessment_id")
+  candidateId    String   @map("candidate_id")
+  type           String
+  provider       String?
+  score          Float
+  subscores      Json?    // Array of AssessmentSubscore objects
+  completedAt    DateTime? @map("completed_at")
+  competencyMap  Json?    @map("competency_map") // Array of CompetencyMapping objects
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@map("assessments")
+}
+
+model FitSnapshot {
+  id                  String   @id @default(uuid()) @map("snapshot_id")
+  jobId               String   @map("job_id")
+  candidateId         String   @map("candidate_id")
+  overall             Float
+  byCompetency        Json     @map("by_competency") // Array of CompetencyScore objects
+  redFlags            String[] @map("red_flags")
+  explainAtoms        String[] @map("explain_atoms")
+  calibrationVersion  String   @map("calibration_version")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  job       Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([candidateId])
+  @@index([jobId, candidateId])
+  @@map("fit_snapshots")
+}
+
+model JobTemplate {
+  id           String   @id @default(uuid()) @map("template_id")
+  name         String
+  competencies Json     // Array of Competency objects
+  hardFilters  Json?    @map("hard_filters") // HardFilters object
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("job_templates")
+}

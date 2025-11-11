@@ -1,0 +1,19 @@
+{
+  "name": "@candidate-screening/scripts",
+  "version": "1.0.0",
+  "scripts": {
+    "seed": "ts-node seed.ts"
+  },
+  "dependencies": {
+    "@candidate-screening/domain": "workspace:*",
+    "papaparse": "^5.4.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/papaparse": "^5.3.14",
+    "@types/uuid": "^9.0.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
