@@ -134,12 +134,42 @@ export class ScoringService {
     sort?: string,
     order?: 'asc' | 'desc'
   ) {
+    // Get candidates with fit snapshots (scored)
     const snapshots = await this.prisma.fitSnapshot.findMany({
       where: { jobId },
       include: {
         candidate: true
       }
     });
+
+    // Also get candidates with applications but no scores yet (for demo)
+    const applications = await this.prisma.application.findMany({
+      where: { jobId },
+      include: { candidate: true }
+    });
+
+    // Create a map of candidate IDs that already have snapshots
+    const scoredCandidateIds = new Set(snapshots.map(s => s.candidateId));
+
+    // Add candidates with applications but no scores
+    for (const app of applications) {
+      if (!scoredCandidateIds.has(app.candidateId)) {
+        // Create a placeholder snapshot for unscored candidates
+        snapshots.push({
+          id: `placeholder-${app.candidateId}`,
+          jobId: app.jobId,
+          candidateId: app.candidateId,
+          overall: 0, // No score yet
+          byCompetency: {},
+          redFlags: [],
+          explainAtoms: [],
+          calibrationVersion: 'v1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          candidate: app.candidate
+        } as any);
+      }
+    }
 
     // Apply filters
     let filtered = snapshots;
