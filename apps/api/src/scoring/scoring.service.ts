@@ -160,9 +160,9 @@ export class ScoringService {
           jobId: app.jobId,
           candidateId: app.candidateId,
           overall: 0, // No score yet
-          byCompetency: {},
+          byCompetency: [], // Empty array, not empty object
           redFlags: [],
-          explainAtoms: [],
+          explainAtoms: ['Not scored yet - Click "Re-score All" to calculate fit score'],
           calibrationVersion: 'v1',
           createdAt: new Date(),
           updatedAt: new Date(),

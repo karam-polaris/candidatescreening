@@ -279,6 +279,10 @@ export default function JobDetailPage() {
                     <Users className="w-5 h-5" />
                     Candidates ({candidates.length})
                   </CardTitle>
+                  <Button onClick={handleScoreBatch} disabled={loading} variant="default">
+                    <ArrowUpDown className="w-4 h-4 mr-2" />
+                    Re-score All
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
