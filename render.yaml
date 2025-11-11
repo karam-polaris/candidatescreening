@@ -1,0 +1,13 @@
+services:
+  # PostgreSQL Database
+  - type: pserv
+    name: dollarcity-db
+    plan: free
+    ipAllowList: []
+
+databases:
+  - name: dollarcity-db
+    plan: free
+    databaseName: candidate_screening
+    user: postgres
+

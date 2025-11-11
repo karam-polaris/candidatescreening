@@ -7,7 +7,13 @@ async function bootstrap() {
 
   // Enable CORS for frontend
   app.enableCors({
-    origin: process.env.WEB_URL || 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      /\.vercel\.app$/,  // Allow all Vercel domains
+      /\.onrender\.com$/,  // Allow all Render domains
+      process.env.WEB_URL || 'http://localhost:3000'
+    ],
     credentials: true
   });
 
@@ -17,10 +23,10 @@ async function bootstrap() {
     whitelist: true
   }));
 
-  const port = process.env.API_PORT || 4000;
+  const port = process.env.PORT || process.env.API_PORT || 4000;
   await app.listen(port);
 
-  console.log(`🚀 API server running on http://localhost:${port}`);
+  console.log(`🚀 API server running on port ${port}`);
 }
 
 bootstrap();

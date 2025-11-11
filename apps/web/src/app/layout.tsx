@@ -5,8 +5,8 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Candidate Screening - AI-Powered Recruitment',
-  description: 'Intelligent candidate screening and ranking system'
+  title: 'Dollar City - Recruitment System',
+  description: 'Intelligent candidate screening for Dollar City retail operations'
 };
 
 export default function RootLayout({

@@ -305,12 +305,12 @@ export class AgentsService {
       results_count: results.length,
       candidates: results.slice(0, 20).map((r) => ({
         name: r.candidate.full_name,
-        candidate_id: r.candidate_id,
-        fit_score: (r.overall * 100).toFixed(1) + '%',
+        candidate_id: r.candidate.candidate_id,
+        fit_score: (r.fitSnapshot.overall * 100).toFixed(1) + '%',
         experience_years: r.candidate.total_experience_years,
         skills: r.candidate.skills.map((s: any) => s.name),
         location: r.candidate.location,
-        red_flags: r.redFlags
+        red_flags: r.fitSnapshot.redFlags
       }))
     };
   }

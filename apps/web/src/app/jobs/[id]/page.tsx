@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@candidate-screening/ui';
-import { Slider, Filter, Users, Settings, MessageSquare, ArrowUpDown, X } from 'lucide-react';
+import { Slider, Filter, Users, Settings, MessageSquare, ArrowUpDown, X, Home } from 'lucide-react';
+import Link from 'next/link';
 import type { Job, FitSnapshot, Candidate } from '@candidate-screening/domain';
 
 interface CandidateWithFit {
@@ -23,6 +24,11 @@ export default function JobDetailPage() {
   const [showComparison, setShowComparison] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [selectedForComparison, setSelectedForComparison] = useState<Set<string>>(new Set());
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
+    { role: 'assistant', content: 'Hello! I\'m your Dollar City recruitment assistant. Ask me about candidates, job requirements, or comparisons.' }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
 
   // Filters
   const [filters, setFilters] = useState({
@@ -83,6 +89,45 @@ export default function JobDetailPage() {
     setSelectedForComparison(newSet);
   };
 
+  const handleChatSend = async () => {
+    if (!chatInput.trim() || chatLoading) return;
+    
+    const userMessage = chatInput.trim();
+    setChatInput('');
+    setChatLoading(true);
+    
+    // Add user message
+    const newMessages = [...chatMessages, { role: 'user' as const, content: userMessage }];
+    setChatMessages(newMessages);
+    
+    try {
+      const response = await fetch('/api/agents/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          context: {
+            jobId,
+            jobTitle: job?.title,
+            candidatesCount: candidates.length
+          }
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setChatMessages([...newMessages, { role: 'assistant', content: data.message || data.response || 'I received your message.' }]);
+      } else {
+        setChatMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered an error. Please make sure the OpenAI API key is configured.' }]);
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      setChatMessages([...newMessages, { role: 'assistant', content: 'Sorry, I couldn\'t connect to the chat service. Please check your API configuration.' }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
   const getFitColor = (score: number) => {
     if (score >= 0.7) return 'bg-green-500';
     if (score >= 0.5) return 'bg-yellow-500';
@@ -114,25 +159,29 @@ export default function JobDetailPage() {
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{job.title}</h1>
-              {job.location && <p className="text-gray-600 mt-1">{job.location}</p>}
-              <div className="flex gap-2 mt-3">
-                {job.competencies.map((comp) => (
-                  <Badge key={comp.name} variant="outline">
-                    {comp.name} {comp.mustHave && <span className="text-red-500">*</span>}
-                  </Badge>
-                ))}
+            <div className="flex items-start gap-4">
+              <Link href="/">
+                <Button variant="outline" size="sm" className="mt-1">
+                  <Home className="w-4 h-4 mr-2" />
+                  Home
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">{job.title}</h1>
+                {job.location && <p className="text-gray-600 mt-1">{job.location}</p>}
+                <div className="flex gap-2 mt-3">
+                  {job.competencies.map((comp) => (
+                    <Badge key={comp.name} variant="outline">
+                      {comp.name} {comp.mustHave && <span className="text-red-500">*</span>}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="flex gap-2">
               <Button onClick={() => setShowCalibration(!showCalibration)} variant="outline">
                 <Settings className="w-4 h-4 mr-2" />
                 Calibrate
-              </Button>
-              <Button onClick={handleScoreBatch}>
-                <ArrowUpDown className="w-4 h-4 mr-2" />
-                Re-score All
               </Button>
               <Button onClick={() => setShowChat(!showChat)} variant="outline">
                 <MessageSquare className="w-4 h-4 mr-2" />
@@ -533,32 +582,178 @@ export default function JobDetailPage() {
         </div>
       )}
 
+      {/* Calibration Panel */}
+      {showCalibration && job && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowCalibration(false)}>
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <Settings className="w-6 h-6" />
+                  Calibrate Job
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">{job.title}</p>
+              </div>
+              <button onClick={() => setShowCalibration(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
+              <div className="space-y-6">
+                {/* Competencies Section */}
+                <div>
+                  <h3 className="font-semibold text-lg mb-4 text-gray-900">Competency Weights</h3>
+                  <div className="space-y-4">
+                    {job.competencies.map((comp, idx) => (
+                      <div key={comp.name} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium text-gray-700">{comp.name}</span>
+                            {comp.mustHave && (
+                              <Badge variant="destructive" className="text-xs">Must-Have</Badge>
+                            )}
+                          </div>
+                          <span className="text-sm font-semibold text-blue-600">{(comp.weight * 100).toFixed(0)}%</span>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={comp.weight * 100}
+                            className="flex-1"
+                            disabled
+                          />
+                          <label className="flex items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={comp.mustHave}
+                              className="rounded"
+                              disabled
+                            />
+                            <span className="text-gray-600">Required</span>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Hard Filters Section */}
+                <div className="pt-4 border-t">
+                  <h3 className="font-semibold text-lg mb-4 text-gray-900">Hard Filters</h3>
+                  <div className="space-y-3">
+                    {job.hardFilters?.min_total_exp_years && (
+                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                        <span className="text-gray-700">Minimum Experience</span>
+                        <span className="font-semibold">{job.hardFilters.min_total_exp_years} years</span>
+                      </div>
+                    )}
+                    {job.hardFilters?.work_auth && (
+                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                        <span className="text-gray-700">Work Authorization</span>
+                        <span className="font-semibold text-sm">{job.hardFilters.work_auth.join(', ')}</span>
+                      </div>
+                    )}
+                    {job.hardFilters?.locations && (
+                      <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                        <span className="text-gray-700">Locations</span>
+                        <span className="font-semibold text-sm">{job.hardFilters.locations.join(', ')}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex gap-3">
+                    <div className="text-blue-600 mt-0.5">ℹ️</div>
+                    <div className="text-sm text-blue-900">
+                      <p className="font-semibold mb-1">Current Calibration</p>
+                      <ul className="space-y-1 text-blue-800">
+                        <li>• <strong>{job.competencies.filter(c => c.mustHave).length}</strong> must-have skills</li>
+                        <li>• Weights are optimized for this role</li>
+                        <li>• To adjust: Use API or re-run calibration script</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t bg-gray-50 flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                <strong>{candidates.length}</strong> candidates scored with current calibration
+              </div>
+              <Button variant="outline" onClick={() => setShowCalibration(false)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chat Panel */}
       {showChat && (
         <div className="fixed bottom-16 right-4 w-96 h-[600px] bg-white rounded-lg shadow-2xl border flex flex-col z-50">
-          <div className="p-4 border-b flex justify-between items-center">
-            <h3 className="font-semibold flex items-center gap-2">
+          <div className="p-4 border-b flex justify-between items-center bg-gradient-to-r from-blue-500 to-blue-600">
+            <h3 className="font-semibold flex items-center gap-2 text-white">
               <MessageSquare className="w-5 h-5" />
-              AI Copilot
+              AI Recruitment Assistant
             </h3>
-            <button onClick={() => setShowChat(false)} className="text-gray-400 hover:text-gray-600">
+            <button onClick={() => setShowChat(false)} className="text-white/80 hover:text-white">
               <X className="w-5 h-5" />
             </button>
           </div>
-          <div className="flex-1 p-4 overflow-y-auto">
-            <div className="text-sm text-gray-600 text-center py-8">
-              Chat copilot coming soon!
-              <br />
-              <span className="text-xs">Configure Azure OpenAI to enable</span>
-            </div>
+          
+          <div className="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-3">
+            {chatMessages.map((msg, idx) => (
+              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                  msg.role === 'user' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-white border shadow-sm'
+                }`}>
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                </div>
+              </div>
+            ))}
+            {chatLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white border shadow-sm rounded-lg px-4 py-2">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="p-4 border-t">
-            <input
-              type="text"
-              placeholder="Ask about candidates..."
-              className="w-full px-3 py-2 border rounded-md text-sm"
-              disabled
-            />
+          
+          <div className="p-4 border-t bg-white">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleChatSend()}
+                placeholder="Ask about candidates, skills, comparisons..."
+                className="flex-1 px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={chatLoading}
+              />
+              <Button 
+                onClick={handleChatSend} 
+                disabled={!chatInput.trim() || chatLoading}
+                size="sm"
+              >
+                Send
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Try: "Who are the top 3 candidates?" or "Compare candidates with Customer Service skills"
+            </p>
           </div>
         </div>
       )}

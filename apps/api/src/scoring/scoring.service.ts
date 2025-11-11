@@ -48,7 +48,7 @@ export class ScoringService {
       });
     }
 
-    const snapshots = [];
+    const snapshots: any[] = [];
     let scored = 0;
     let excluded = 0;
 
@@ -146,45 +146,51 @@ export class ScoringService {
 
     if (filters) {
       if (filters.min_fit !== undefined) {
-        filtered = filtered.filter((s) => s.overall >= filters.min_fit);
+        const minFit = filters.min_fit;
+        filtered = filtered.filter((s) => s.overall >= minFit);
       }
 
       if (filters.min_experience !== undefined) {
+        const minExp = filters.min_experience;
         filtered = filtered.filter(
           (s) =>
             s.candidate.totalExperienceYears &&
-            s.candidate.totalExperienceYears >= filters.min_experience
+            s.candidate.totalExperienceYears >= minExp
         );
       }
 
       if (filters.location) {
+        const locationFilter = filters.location.toLowerCase();
         filtered = filtered.filter(
           (s) =>
             s.candidate.location &&
             s.candidate.location
               .toLowerCase()
-              .includes(filters.location.toLowerCase())
+              .includes(locationFilter)
         );
       }
 
       if (filters.work_auth) {
+        const workAuthFilter = filters.work_auth;
         filtered = filtered.filter(
-          (s) => s.candidate.workAuth === filters.work_auth
+          (s) => s.candidate.workAuth === workAuthFilter
         );
       }
 
       if (filters.skills && filters.skills.length > 0) {
+        const skillsFilter = filters.skills;
         filtered = filtered.filter((s) => {
           const candidateSkills = (s.candidate.skills as any[]).map((sk: any) =>
             sk.name.toLowerCase()
           );
-          return filters.skills.some((skill) =>
+          return skillsFilter.some((skill) =>
             candidateSkills.includes(skill.toLowerCase())
           );
         });
       }
 
       if (filters.min_assessment_score !== undefined) {
+        const minScore = filters.min_assessment_score;
         const candidateIds = filtered.map((s) => s.candidate.id);
         const assessments = await this.prisma.assessment.findMany({
           where: { candidateId: { in: candidateIds } }
@@ -197,8 +203,10 @@ export class ScoringService {
         });
 
         filtered = filtered.filter(
-          (s) =>
-            assessmentMap.get(s.candidate.id) >= filters.min_assessment_score
+          (s) => {
+            const score = assessmentMap.get(s.candidate.id);
+            return score !== undefined && score >= minScore;
+          }
         );
       }
     }
@@ -227,15 +235,6 @@ export class ScoringService {
     });
 
     return filtered.map((s) => ({
-      snapshot_id: s.id,
-      job_id: s.jobId,
-      candidate_id: s.candidateId,
-      overall: s.overall,
-      byCompetency: s.byCompetency as any,
-      redFlags: s.redFlags,
-      explainAtoms: s.explainAtoms,
-      calibrationVersion: s.calibrationVersion,
-      created_at: s.createdAt.toISOString(),
       candidate: {
         candidate_id: s.candidate.id,
         full_name: s.candidate.fullName,
@@ -249,7 +248,20 @@ export class ScoringService {
         seniority: s.candidate.seniority as any,
         education: s.candidate.education as any,
         experience_summary: s.candidate.experienceSummary || undefined,
-        sources: s.candidate.sources as any
+        sources: s.candidate.sources as any,
+        created_at: s.candidate.createdAt.toISOString(),
+        updated_at: s.candidate.updatedAt.toISOString()
+      },
+      fitSnapshot: {
+        snapshot_id: s.id,
+        job_id: s.jobId,
+        candidate_id: s.candidateId,
+        overall: s.overall,
+        byCompetency: s.byCompetency as any,
+        redFlags: s.redFlags,
+        explainAtoms: s.explainAtoms,
+        calibrationVersion: s.calibrationVersion,
+        created_at: s.createdAt.toISOString()
       }
     }));
   }

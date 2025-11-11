@@ -39,11 +39,12 @@ export class CandidatesService {
     // Filter by skills if provided (JSON field filtering)
     let filtered = candidates;
     if (filters?.skills && filters.skills.length > 0) {
+      const skillsFilter = filters.skills;
       filtered = candidates.filter((candidate) => {
         const candidateSkills = (candidate.skills as any[]).map((s: any) =>
           s.name.toLowerCase()
         );
-        return filters.skills.some((skill) =>
+        return skillsFilter.some((skill) =>
           candidateSkills.includes(skill.toLowerCase())
         );
       });
@@ -95,45 +96,51 @@ export class CandidatesService {
 
     if (filters) {
       if (filters.min_fit !== undefined) {
-        filtered = filtered.filter((s) => s.overall >= filters.min_fit);
+        const minFit = filters.min_fit;
+        filtered = filtered.filter((s) => s.overall >= minFit);
       }
 
       if (filters.min_experience !== undefined) {
+        const minExp = filters.min_experience;
         filtered = filtered.filter(
           (s) =>
             s.candidate.totalExperienceYears &&
-            s.candidate.totalExperienceYears >= filters.min_experience
+            s.candidate.totalExperienceYears >= minExp
         );
       }
 
       if (filters.location) {
+        const locationFilter = filters.location.toLowerCase();
         filtered = filtered.filter(
           (s) =>
             s.candidate.location &&
             s.candidate.location
               .toLowerCase()
-              .includes(filters.location.toLowerCase())
+              .includes(locationFilter)
         );
       }
 
       if (filters.work_auth) {
+        const workAuthFilter = filters.work_auth;
         filtered = filtered.filter(
-          (s) => s.candidate.workAuth === filters.work_auth
+          (s) => s.candidate.workAuth === workAuthFilter
         );
       }
 
       if (filters.skills && filters.skills.length > 0) {
+        const skillsFilter = filters.skills;
         filtered = filtered.filter((s) => {
           const candidateSkills = (s.candidate.skills as any[]).map((sk: any) =>
             sk.name.toLowerCase()
           );
-          return filters.skills.some((skill) =>
+          return skillsFilter.some((skill) =>
             candidateSkills.includes(skill.toLowerCase())
           );
         });
       }
 
       if (filters.min_assessment_score !== undefined) {
+        const minScore = filters.min_assessment_score;
         // Get assessments for candidates
         const candidateIds = filtered.map((s) => s.candidate.id);
         const assessments = await this.prisma.assessment.findMany({
@@ -147,8 +154,10 @@ export class CandidatesService {
         });
 
         filtered = filtered.filter(
-          (s) =>
-            assessmentMap.get(s.candidate.id) >= filters.min_assessment_score
+          (s) => {
+            const score = assessmentMap.get(s.candidate.id);
+            return score !== undefined && score >= minScore;
+          }
         );
       }
     }

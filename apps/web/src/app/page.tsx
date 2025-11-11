@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@candidate-screening/ui';
 import { Badge } from '@candidate-screening/ui';
-import { Briefcase, Users, TrendingUp } from 'lucide-react';
+import { Briefcase, Users, TrendingUp, Search, Filter } from 'lucide-react';
 import type { Job } from '@candidate-screening/domain';
 
 interface JobStats {
@@ -17,6 +17,9 @@ export default function Home() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobStats, setJobStats] = useState<Map<string, JobStats>>(new Map());
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCountry, setFilterCountry] = useState('all');
+  const [filterRole, setFilterRole] = useState('all');
 
   useEffect(() => {
     fetchJobs();
@@ -43,13 +46,27 @@ export default function Home() {
     }
   };
 
+  // Filter and search jobs
+  const filteredJobs = jobs.filter((job) => {
+    const matchesSearch = searchQuery === '' ||
+      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (job.location && job.location.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesCountry = filterCountry === 'all' ||
+      (job.location && job.location.includes(filterCountry));
+    
+    const matchesRole = filterRole === 'all' || job.title.includes(filterRole);
+    
+    return matchesSearch && matchesCountry && matchesRole;
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900">Candidate Screening</h1>
-            <p className="text-gray-600 mt-2">AI-powered intelligent recruitment</p>
+            <h1 className="text-4xl font-bold text-gray-900">🏪 Dollar City</h1>
+            <p className="text-gray-600 mt-2">Recruitment System - Colombia & Peru Operations</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
@@ -72,10 +89,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 p-8 pb-16">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-6 flex justify-between items-center">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">Candidate Screening</h1>
-            <p className="text-gray-600 mt-2">AI-powered intelligent recruitment</p>
+            <h1 className="text-4xl font-bold text-gray-900">🏪 Dollar City</h1>
+            <p className="text-gray-600 mt-2">Recruitment System - Colombia & Peru Operations</p>
           </div>
           <Link
             href="/jobs/new"
@@ -85,7 +102,82 @@ export default function Home() {
           </Link>
         </div>
 
-        {jobs.length === 0 ? (
+        {/* Search and Filter Bar */}
+        <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search Input */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search by job title or location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Country Filter */}
+            <div className="flex items-center gap-2">
+              <Filter className="text-gray-400 w-5 h-5" />
+              <select
+                value={filterCountry}
+                onChange={(e) => setFilterCountry(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              >
+                <option value="all">All Countries</option>
+                <option value="Colombia">Colombia</option>
+                <option value="Peru">Peru</option>
+              </select>
+            </div>
+
+            {/* Role Filter */}
+            <div>
+              <select
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              >
+                <option value="all">All Roles</option>
+                <option value="Auxiliar de Tienda">Auxiliar de Tienda</option>
+                <option value="Auxiliar de Logística">Auxiliar de Logística</option>
+                <option value="Subgerente">Subgerente</option>
+                <option value="Gerente">Gerente</option>
+                <option value="Coordinador">Coordinador</option>
+                <option value="Analista">Analista</option>
+              </select>
+            </div>
+
+            {/* Results Count */}
+            <div className="flex items-center px-4 py-2 bg-blue-50 rounded-md">
+              <span className="text-sm font-medium text-blue-900">
+                {filteredJobs.length} {filteredJobs.length === 1 ? 'job' : 'jobs'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {filteredJobs.length === 0 && jobs.length > 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Search className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No matching jobs</h3>
+              <p className="text-gray-600 mb-4">
+                Try adjusting your search or filters
+              </p>
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setFilterCountry('all');
+                  setFilterRole('all');
+                }}
+                className="inline-block px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Clear Filters
+              </button>
+            </CardContent>
+          </Card>
+        ) : jobs.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Briefcase className="w-16 h-16 mx-auto text-gray-400 mb-4" />
@@ -103,7 +195,7 @@ export default function Home() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {jobs.map((job) => {
+            {filteredJobs.map((job) => {
               const stats = jobStats.get(job.job_id);
               return (
                 <Link key={job.job_id} href={`/jobs/${job.job_id}`}>
