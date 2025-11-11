@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@candidate-screening/ui';
-import { Slider, Filter, Users, Settings, MessageSquare, ArrowUpDown, X, Home } from 'lucide-react';
+import { Sliders, Filter, Users, Settings, MessageSquare, ArrowUpDown, X, Home } from 'lucide-react';
 import Link from 'next/link';
 import type { Job, FitSnapshot, Candidate } from '@candidate-screening/domain';
 
