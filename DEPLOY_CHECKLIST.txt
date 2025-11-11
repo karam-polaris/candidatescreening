@@ -1,0 +1,109 @@
+🚀 DOLLAR CITY - VERCEL DEPLOYMENT CHECKLIST
+============================================
+
+✅ = Completed | ☐ = To Do
+
+PART 1: GITHUB SETUP
+--------------------
+☐ 1. Create GitHub repository at https://github.com/new
+     Name: dollarcity-recruitment
+     
+☐ 2. After creating, copy YOUR repository URL
+     Example: https://github.com/YOUR-USERNAME/dollarcity-recruitment.git
+     
+☐ 3. Tell me your GitHub username so I can help with the push
+
+
+PART 2: RENDER - DATABASE (3 min)
+----------------------------------
+☐ 1. Go to https://render.com → Sign up with GitHub
+
+☐ 2. Dashboard → "New +" → "PostgreSQL"
+     • Name: dollarcity-db
+     • Database: candidate_screening  
+     • Plan: Free
+     • Create
+
+☐ 3. Wait 2 minutes for database
+
+☐ 4. Copy "Internal Database URL" from Connections section
+     Save it! Looks like: postgres://user:pass@host/db
+
+
+PART 3: RENDER - API BACKEND (5 min)
+-------------------------------------
+☐ 1. Dashboard → "New +" → "Web Service"
+
+☐ 2. Connect GitHub repo: dollarcity-recruitment
+
+☐ 3. Configure:
+     • Name: dollarcity-api
+     • Root Directory: apps/api
+     • Build Command: 
+       npm install -g pnpm && pnpm install && pnpm build && npx prisma generate && npx prisma migrate deploy
+     • Start Command: node dist/main.js
+     • Plan: Free
+
+☐ 4. Environment Variables:
+     DATABASE_URL = (paste from Part 2)
+     NODE_ENV = production
+     PORT = 10000
+
+☐ 5. Click "Create Web Service" → Wait 5-7 minutes
+
+☐ 6. Copy your API URL: https://dollarcity-api-XXXX.onrender.com
+
+
+PART 4: IMPORT JOBS (2 min)
+----------------------------
+☐ 1. In your API service → Click "Shell" tab
+
+☐ 2. Run these commands:
+     cd /opt/render/project/src
+     node ../../scripts/seed/import-data.js
+
+☐ 3. Wait for "✅ Import complete" message
+
+
+PART 5: VERCEL - FRONTEND (3 min)
+----------------------------------
+☐ 1. Go to https://vercel.com → Sign up with GitHub
+
+☐ 2. Dashboard → "Add New..." → "Project"
+
+☐ 3. Import: dollarcity-recruitment
+
+☐ 4. Configure:
+     • Framework: Next.js (auto-detected)
+     • Root Directory: apps/web
+     • Build Command: (leave default)
+     • Output Directory: (leave default)
+
+☐ 5. Environment Variables → Add:
+     NEXT_PUBLIC_API_URL = https://dollarcity-api-XXXX.onrender.com
+     (use YOUR API URL from Part 3)
+
+☐ 6. Click "Deploy" → Wait 3-5 minutes
+
+☐ 7. Get your live URL: https://dollarcity-XXXX.vercel.app
+
+
+FINAL CHECKS
+------------
+☐ Visit your Vercel URL
+☐ See 99 jobs on homepage
+☐ Search works
+☐ Click a job → see candidates
+☐ Fit scores showing correctly
+
+
+🎉 YOU'RE LIVE!
+---------------
+Share with client: https://your-app.vercel.app
+
+Note: First load may take 10-30 seconds (free hosting cold start)
+
+
+ESTIMATED TIME: 15-20 minutes total
+COST: $0 (100% free!)
+
